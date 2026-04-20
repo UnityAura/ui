@@ -19,6 +19,9 @@ jobs:
       - name: Create clean package zip
         run: |
           set -euo pipefail
+          version_label="${GITHUB_REF_NAME:-local}"
+          version_label="${version_label##*/}"
+          version_label="${version_label//\//-}"
           mkdir -p dist/ui
           rsync -a --delete \
             --exclude '.git/' \
@@ -27,7 +30,7 @@ jobs:
             --exclude '*.zip' \
             ./ dist/ui/
           cd dist
-          zip -r "ui-${GITHUB_REF_NAME:-local}.zip" ui
+          zip -r "ui-${version_label}.zip" ui
 
       - name: Upload zip artifact
         uses: actions/upload-artifact@v4
