@@ -25,6 +25,7 @@ jobs:
           mkdir -p dist/ui
           rsync -a \
             --exclude '.git/' \
+            --exclude '.git*' \
             --exclude '.github/' \
             --exclude 'dist/' \
             --exclude '*.zip' \
