@@ -23,7 +23,7 @@ jobs:
           version_label="${version_label##*/}"
           version_label="${version_label//\//-}"
           mkdir -p dist/ui
-          rsync -a --delete \
+          rsync -a \
             --exclude '.git/' \
             --exclude '.github/' \
             --exclude 'dist/' \
