@@ -1,0 +1,40 @@
+name: Package Zip
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create clean package zip
+        run: |
+          set -euo pipefail
+          version_label="${GITHUB_REF_NAME:-local}"
+          version_label="${version_label##*/}"
+          version_label="${version_label//\//-}"
+          mkdir -p dist/ui
+          rsync -a \
+            --exclude '.git/' \
+            --exclude '.git*' \
+            --exclude '.github/' \
+            --exclude 'dist/' \
+            --exclude '*.zip' \
+            ./ dist/ui/
+          cd dist
+          zip -r "ui-${version_label}.zip" ui
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-zip
+          path: dist/*.zip
