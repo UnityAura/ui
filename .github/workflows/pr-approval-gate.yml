@@ -37,7 +37,8 @@ jobs:
 
             const latestStateByReviewer = new Map();
             for (const review of reviews) {
-              if (!review.user || review.user.type === "Bot") {
+              const userType = review.user?.type?.toLowerCase();
+              if (!review.user || userType === "bot") {
                 continue;
               }
 
