@@ -70,7 +70,7 @@ git switch -c release/x.y.z
 # Open PR: release/x.y.z → test   (first stage)
 # After test sign-off, open PR: test → main
 # Tag main: git tag vX.Y.Z
-# Back-merge: open PR release/x.y.z → develop
+# Back-merge: open PR main → develop
 # Delete release branch after all merges
 ```
 
