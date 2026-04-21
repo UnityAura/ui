@@ -1,0 +1,60 @@
+name: Setup Long-Lived Branches
+
+# One-time setup workflow. Run this manually from the GitHub Actions UI
+# (Actions → Setup Long-Lived Branches → Run workflow) after the branching
+# model PR has been merged into main.
+#
+# Creates the develop, test, and docs branches from main if they do not
+# already exist. Safe to re-run — existing branches are left untouched.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create long-lived branches from main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branches = ['develop', 'test', 'docs'];
+
+            const { data: mainRef } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/main',
+            });
+            const mainSha = mainRef.object.sha;
+            core.info(`main is at ${mainSha}`);
+
+            for (const branch of branches) {
+              try {
+                await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${branch}`,
+                });
+                core.info(`Branch '${branch}' already exists — skipping.`);
+              } catch (err) {
+                if (err.status !== 404) throw err;
+                await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `refs/heads/${branch}`,
+                  sha: mainSha,
+                });
+                core.info(`Created branch '${branch}' from main (${mainSha}).`);
+              }
+            }
+
+            core.info('Done. Apply branch protection rules as described in CONTRIBUTING.md.');
