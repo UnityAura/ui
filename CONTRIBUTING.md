@@ -129,14 +129,13 @@ git switch -c docs/<short-description>
 
 7. After merge to `main`, tag the release:
    git switch main && git pull origin main
-   git tag vx.y.z
-   git push origin vx.y.z
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
    (This triggers the Package Zip workflow)
 
 8. Back-merge to `develop`:
-   git switch develop && git pull origin develop
-   git merge --no-ff main
-   # Open PR or push directly to develop after reviewing diff
+   # Open PR: main → develop (use the default PR template)
+   # Requires approvals + CI pass, same as any other PR to develop
 ```
 
 ---
