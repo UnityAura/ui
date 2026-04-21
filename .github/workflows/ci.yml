@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - test
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  validate-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate package.json
+        run: |
+          set -euo pipefail
+          echo "Validating package.json..."
+          node -e "
+            const pkg = require('./package.json');
+            const required = ['name', 'version', 'displayName', 'description', 'unity'];
+            const missing = required.filter(k => !pkg[k]);
+            if (missing.length > 0) {
+              console.error('Missing required fields: ' + missing.join(', '));
+              process.exit(1);
+            }
+            const semver = /^\d+\.\d+\.\d+$/;
+            if (!semver.test(pkg.version)) {
+              console.error('version must be semver (x.y.z), got: ' + pkg.version);
+              process.exit(1);
+            }
+            console.log('package.json valid — name: ' + pkg.name + ', version: ' + pkg.version);
+          "
