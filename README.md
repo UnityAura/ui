@@ -37,3 +37,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full branch lifecycle, promotion 
 ## Unity compatibility
 
 - Package metadata is configured for **Unity v6+** (`6000.0` and higher).
+
+## Discord community
+
+Join our Discord community: https://discord.gg/nZUpmVXS4E
