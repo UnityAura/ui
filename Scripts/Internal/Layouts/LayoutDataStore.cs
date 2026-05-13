@@ -48,8 +48,10 @@ namespace Nova.Internal.Layouts
         public NativeList<Length3.Calculated> CalculatedLengths;
 
         public NativeList<bool> UseRotations;
+        public NativeList<bool> OffsetBySize;
         public NativeList<float3> Alignments;
         public NativeList<AutoSize3> AutoSizes;
+        public NativeList<int2> ExpandWeights;
 
         public NativeList<AutoLayout> AutoLayouts;
         public NativeList<Length2.Calculated> CalculatedSpacing;
@@ -89,8 +91,10 @@ namespace Nova.Internal.Layouts
         private Length2.Calculated* calcSpacingPtr;
 
         private bool* useRotationsPtr;
+        private bool* offsetBySizePtr;
         private float3* alignmentsPtr;
         private AutoSize3* autosizesPtr;
+        private int2* expandWeightsPtr;
         private AutoLayout* autoLayoutsPtr;
         private AspectRatio* aspectRatiosPtr;
 
@@ -375,8 +379,10 @@ namespace Nova.Internal.Layouts
             calcPropertiesPtr = registerRunner.CalcPropertiesPtr;
 
             useRotationsPtr = registerRunner.UseRotationsPtr;
+            offsetBySizePtr = registerRunner.OffsetBySizePtr;
             alignmentsPtr = registerRunner.AlignmentsPtr;
             autosizesPtr = registerRunner.AutosizesPtr;
+            expandWeightsPtr = registerRunner.ExpandWeightsPtr;
             aspectRatiosPtr = registerRunner.AspectRatiosPtr;
 
             TransformTracker.Add(val);
@@ -419,7 +425,9 @@ namespace Nova.Internal.Layouts
             layout.WrapAutoSizes(autosizesPtr);
             layout.WrapAlignments(alignmentsPtr);
             layout.WrapUseRotations(useRotationsPtr);
+            layout.WrapOffsetBySize(offsetBySizePtr);
             layout.WrapAspectRatios(aspectRatiosPtr);
+            layout.WrapExpandWeights(expandWeightsPtr);
         }
 
         public void SetLayoutDirty(ILayoutBlock val)
@@ -443,7 +451,7 @@ namespace Nova.Internal.Layouts
         public ref LayoutPointer Access(ILayoutBlock val)
         {
             DataStoreIndex index = val.Index;
-
+            if (!index.IsValid || index >= AccessedLayouts.Length)
             if (!index.IsValid)
             {
                 return ref EmptyProperties;
@@ -569,8 +577,10 @@ namespace Nova.Internal.Layouts
             CalculatedLengths = new NativeList<Length3.Calculated>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
 
             UseRotations = new NativeList<bool>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
+            OffsetBySize = new NativeList<bool>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
             Alignments = new NativeList<float3>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
             AutoSizes = new NativeList<AutoSize3>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
+            ExpandWeights = new NativeList<int2>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
             AspectRatios = new NativeList<AspectRatio>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
             ParentSizes = new NativeList<float3>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
 
@@ -579,8 +589,10 @@ namespace Nova.Internal.Layouts
             calcPropertiesPtr = (Length3.Calculated*)LengthConfigs.GetRawPtr();
 
             useRotationsPtr = UseRotations.GetRawPtr();
+            offsetBySizePtr = OffsetBySize.GetRawPtr();
             alignmentsPtr = Alignments.GetRawPtr();
             autosizesPtr = AutoSizes.GetRawPtr();
+            expandWeightsPtr = ExpandWeights.GetRawPtr();
 
             DirectContentSizes = new NativeList<float3>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
             DirectContentOffsets = new NativeList<float3>(Constants.AllElementsInitialCapacity, Allocator.Persistent);
@@ -609,8 +621,10 @@ namespace Nova.Internal.Layouts
                 LengthRanges = LengthMinMaxes,
 
                 UseRotations = UseRotations,
+                OffsetBySize = OffsetBySize,
                 Alignments = Alignments,
                 Autosizes = AutoSizes,
+                ExpandWeights = ExpandWeights,
                 AspectRatios = AspectRatios,
 
                 AutoLayouts = AutoLayouts,
@@ -657,8 +671,10 @@ namespace Nova.Internal.Layouts
                 CalculatedLengths = CalculatedLengths,
 
                 UseRotations = UseRotations,
+                OffsetBySize = OffsetBySize,
                 Alignments = Alignments,
                 AutoSizes = AutoSizes,
+                ExpandWeights = ExpandWeights,
 
                 AutoLayouts = AutoLayouts,
                 CalculatedSpacing = CalculatedSpacing,
@@ -696,8 +712,10 @@ namespace Nova.Internal.Layouts
                 CalculatedLengths = CalculatedLengths,
 
                 UseRotations = UseRotations,
+                OffsetBySize = OffsetBySize,
                 Alignments = Alignments,
                 AutoSizes = AutoSizes,
+                ExpandWeights = ExpandWeights,
 
                 AutoLayouts = AutoLayouts,
                 CalculatedSpacing = CalculatedSpacing,
@@ -745,8 +763,10 @@ namespace Nova.Internal.Layouts
                 Lengths = LengthConfigs,
                 Ranges = LengthMinMaxes,
                 UseRotations = UseRotations,
+                OffsetBySize = OffsetBySize,
                 Alignments = Alignments,
                 AutoSizes = AutoSizes,
+                ExpandWeights = ExpandWeights,
                 AspectRatios = AspectRatios,
 
                 AutoLayouts = AutoLayouts,
@@ -768,8 +788,10 @@ namespace Nova.Internal.Layouts
             CalculatedLengths.Dispose();
 
             UseRotations.Dispose();
+            OffsetBySize.Dispose();
             Alignments.Dispose();
             AutoSizes.Dispose();
+            ExpandWeights.Dispose();
             AspectRatios.Dispose();
             ParentSizes.Dispose();
 

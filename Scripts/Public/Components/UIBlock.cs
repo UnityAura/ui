@@ -146,6 +146,56 @@ namespace Nova
         }
 
         /// <summary>
+        /// Update <see cref="Size"/> per-axis while preserving unmodified axes.
+        /// Supports mixed <see cref="LengthType.Value"/> and <see cref="LengthType.Percent"/> per axis.
+        /// </summary>
+        /// <remarks>
+        /// If an axis is currently stored as <see cref="LengthType.Value"/>, percent inputs will be converted to units using
+        /// the <see cref="Parent"/>'s <see cref="PaddedSize"/> along that axis (and vice versa).
+        /// Percent inputs are expected in UI space (0-100).
+        /// </remarks>
+        public void SetSizeAxes(float? x = null, float? y = null, float? z = null, Length3Extensions.LengthInputSpace inputSpace = Length3Extensions.LengthInputSpace.ValueUnits)
+        {
+            Vector3 relativeTo = Parent != null ? Parent.PaddedSize : Vector3.one;
+            ref Length3 size = ref Size;
+
+            if (x.HasValue)
+                size.X = Length3Extensions.SetLengthPreserveType(size.X, x.Value, inputSpace, relativeTo.x);
+            if (y.HasValue)
+                size.Y = Length3Extensions.SetLengthPreserveType(size.Y, y.Value, inputSpace, relativeTo.y);
+            if (z.HasValue)
+                size.Z = Length3Extensions.SetLengthPreserveType(size.Z, z.Value, inputSpace, relativeTo.z);
+        }
+
+        /// <summary>
+        /// Read <see cref="Size"/> as UI percent values (0-100), converting per-axis as needed.
+        /// </summary>
+        public Vector3 GetSizePercentUI()
+        {
+            Vector3 relativeTo = Parent != null ? Parent.PaddedSize : Vector3.one;
+            ref Length3 size = ref Size;
+
+            float x = size.X.Type == LengthType.Percent ? size.X.Percent * 100f : (relativeTo.x != 0f ? (size.X.Value / relativeTo.x) * 100f : 0f);
+            float y = size.Y.Type == LengthType.Percent ? size.Y.Percent * 100f : (relativeTo.y != 0f ? (size.Y.Value / relativeTo.y) * 100f : 0f);
+            float z = size.Z.Type == LengthType.Percent ? size.Z.Percent * 100f : (relativeTo.z != 0f ? (size.Z.Value / relativeTo.z) * 100f : 0f);
+            return new Vector3(x, y, z);
+        }
+
+        /// <summary>
+        /// Read <see cref="Size"/> as value units, converting per-axis as needed.
+        /// </summary>
+        public Vector3 GetSizeValueUnits()
+        {
+            Vector3 relativeTo = Parent != null ? Parent.PaddedSize : Vector3.one;
+            ref Length3 size = ref Size;
+
+            float x = size.X.Type == LengthType.Value ? size.X.Value : size.X.Percent * relativeTo.x;
+            float y = size.Y.Type == LengthType.Value ? size.Y.Value : size.Y.Percent * relativeTo.y;
+            float z = size.Z.Type == LengthType.Value ? size.Z.Value : size.Z.Percent * relativeTo.z;
+            return new Vector3(x, y, z);
+        }
+
+        /// <summary>
         /// The <see cref="MinMax3"/> used to clamp <see cref="Size">Size</see> and <see cref="AutoSize">Auto Size</see> when calculating <see cref="CalculatedSize">CalculatedSize.</see>.
         /// </summary>
         public ref MinMax3 SizeMinMax
@@ -340,6 +390,7 @@ namespace Nova
         /// </remarks>
         public Bounds HierarchyBounds => new Bounds(HierarchyCenter, HierarchySize);
 
+
         /// <summary>
         /// The <see cref="Length3"/> configuration used to calculate <see cref="CalculatedPosition">Calculated Position</see>. Describes a per-axis offset from its <see cref="Alignment">Alignment</see>.</summary>
         /// <remarks>
@@ -367,6 +418,95 @@ namespace Nova
             {
                 return ref Layout.Position;
             }
+        }
+
+        /// <summary>
+        /// Parent span used when converting between position value units and UI percent (0-100).
+        /// When <see cref="Layout.OffsetBySize"/> is enabled, matches the layout engine: parent padded size minus this
+        /// block's <see cref="CalculatedSize">calculated size</see> (per axis, clamped at zero)—the in-bounds travel span.
+        /// When the flag is off, this is the parent's <see cref="PaddedSize"/> alone.
+        /// </summary>
+        /// <remarks>
+        /// Conversion must use this span whenever <see cref="Layout.OffsetBySize"/> is on, not only after a position axis
+        /// is stored as percent. Otherwise percent-style inputs (e.g. animation at 50 in UI space) are resolved using the
+        /// full parent width while the engine later interprets percents against the smaller span, which skews readbacks
+        /// (values drifting above the requested UI percent).
+        /// </remarks>
+        private Vector3 GetPositionSpaceRelativeToParent()
+        {
+            Vector3 parentSize = Parent != null ? Parent.PaddedSize : Vector3.one;
+            if (Parent == null || !Layout.OffsetBySize)
+            {
+                return parentSize;
+            }
+
+            Vector3 childSize = CalculatedSize.Value;
+            return Vector3.Max(parentSize - childSize, Vector3.zero);
+        }
+
+        /// <summary>
+        /// Update <see cref="Position"/> per-axis while preserving unmodified axes.
+        /// Supports mixed <see cref="LengthType.Value"/> and <see cref="LengthType.Percent"/> per axis.
+        /// </summary>
+        /// <remarks>
+        /// If an axis is currently stored as <see cref="LengthType.Value"/>, percent inputs will be converted to units using
+        /// the <see cref="Parent"/>'s <see cref="PaddedSize"/> along that axis when <see cref="Layout.OffsetBySize"/> is off.
+        /// When <see cref="Layout.OffsetBySize"/> is on, conversions use the in-bounds span (parent padded size minus this
+        /// block's calculated size), matching percent-style layout for that mode even before axes are switched to percent.
+        /// Percent inputs are expected in UI space (0-100).
+        /// </remarks>
+        public void SetPositionAxes(float? x = null, float? y = null, float? z = null, Length3Extensions.LengthInputSpace inputSpace = Length3Extensions.LengthInputSpace.ValueUnits)
+        {
+            Vector3 relativeTo = GetPositionSpaceRelativeToParent();
+            ref Length3 pos = ref Position;
+
+            bool changedX = x.HasValue;
+            bool changedY = y.HasValue;
+            bool changedZ = z.HasValue;
+
+            if (changedX)
+                pos.X = Length3Extensions.SetLengthPreserveType(pos.X, x.Value, inputSpace, relativeTo.x);
+            if (changedY)
+                pos.Y = Length3Extensions.SetLengthPreserveType(pos.Y, y.Value, inputSpace, relativeTo.y);
+            if (changedZ)
+                pos.Z = Length3Extensions.SetLengthPreserveType(pos.Z, z.Value, inputSpace, relativeTo.z);
+
+        }
+
+        /// <summary>
+        /// Read <see cref="Position"/> as UI percent values (0-100), converting per-axis as needed.
+        /// </summary>
+        /// <remarks>
+        /// When <see cref="Layout.OffsetBySize"/> is on, value-to-percent display uses the in-bounds span (parent padded size
+        /// minus this block's calculated size), not the full parent width alone, so UI percent matches layout travel.
+        /// </remarks>
+        public Vector3 GetPositionPercentUI()
+        {
+            Vector3 relativeTo = GetPositionSpaceRelativeToParent();
+            ref Length3 pos = ref Position;
+
+            float x = pos.X.Type == LengthType.Percent ? pos.X.Percent * 100f : (relativeTo.x != 0f ? (pos.X.Value / relativeTo.x) * 100f : 0f);
+            float y = pos.Y.Type == LengthType.Percent ? pos.Y.Percent * 100f : (relativeTo.y != 0f ? (pos.Y.Value / relativeTo.y) * 100f : 0f);
+            float z = pos.Z.Type == LengthType.Percent ? pos.Z.Percent * 100f : (relativeTo.z != 0f ? (pos.Z.Value / relativeTo.z) * 100f : 0f);
+            return new Vector3(x, y, z);
+        }
+
+        /// <summary>
+        /// Read <see cref="Position"/> as value units, converting per-axis as needed.
+        /// </summary>
+        /// <remarks>
+        /// When <see cref="Layout.OffsetBySize"/> is on, percent-to-value display uses the in-bounds span (parent padded size
+        /// minus this block's calculated size).
+        /// </remarks>
+        public Vector3 GetPositionValueUnits()
+        {
+            Vector3 relativeTo = GetPositionSpaceRelativeToParent();
+            ref Length3 pos = ref Position;
+
+            float x = pos.X.Type == LengthType.Value ? pos.X.Value : pos.X.Percent * relativeTo.x;
+            float y = pos.Y.Type == LengthType.Value ? pos.Y.Value : pos.Y.Percent * relativeTo.y;
+            float z = pos.Z.Type == LengthType.Value ? pos.Z.Value : pos.Z.Percent * relativeTo.z;
+            return new Vector3(x, y, z);
         }
 
         /// <summary>

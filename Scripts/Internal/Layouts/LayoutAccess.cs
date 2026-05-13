@@ -200,9 +200,13 @@ namespace Nova
                 [NoAlias]
                 private bool* useRotationsPtr;
                 [NoAlias]
+                private bool* offsetBySizePtr;
+                [NoAlias]
                 private float3* relativeSizesPtr;
                 [NoAlias]
                 private quaternion* rotationsPtr;
+                [NoAlias]
+                private int2* expandWeightsPtr;
 
                 public ref AutoSize3 AutoSize
                 {
@@ -222,10 +226,28 @@ namespace Nova
                     get => ref UnsafeUtility.AsRef<bool>(useRotationsPtr + Index);
                 }
 
+                public ref bool OffsetBySize
+                {
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    get => ref UnsafeUtility.AsRef<bool>(offsetBySizePtr + Index);
+                }
+
                 public ref AspectRatio AspectRatio
                 {
                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
                     get => ref UnsafeUtility.AsRef<AspectRatio>(aspectRatiosPtr + Index);
+                }
+
+                public ref int2 ExpandWeight
+                {
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    get
+                    {
+                        unsafe
+                        {
+                            return ref UnsafeUtility.AsRef<int2>(expandWeightsPtr + Index);
+                        }
+                    }
                 }
 
                 private int Length3Index
@@ -491,11 +513,6 @@ namespace Nova
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public void Calc(float3 relativeTo, bool3 calculateSize)
                 {
-                    ref Length3 size = ref Size;
-
-                    // position must be set before size in case of Expand
-                    CalculatedPosition = Length3.Calc(Position, PositionMinMax, relativeTo);
-
                     // margin must be set before size in case of Expand
                     CalculatedMargin = LengthBounds.Calc(Margin, MarginMinMax, relativeTo);
 
@@ -508,7 +525,30 @@ namespace Nova
                     // padding must be set after size
                     CalculatedPadding = LengthBounds.Calc(Padding, PaddingMinMax, CalculatedSize.Value);
 
+                    float3 positionRelativeTo = relativeTo;
+                    if (OffsetBySize && math.any(Position.IsRelative))
+                    {
+                        positionRelativeTo = GetPositionRelativeTo(relativeTo);
+                    }
+
+                    CalculatedPosition = Length3.Calc(Position, PositionMinMax, positionRelativeTo);
+
                     RelativeToSize = relativeTo;
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                private float3 GetPositionRelativeTo(float3 parentSize)
+                {
+                    float3 childSize = CalculatedSize.Value;
+
+                    // Available travel range (in units) such that 100% stays in-bounds.
+                    //
+                    // Note: when centered, Position is already centered around 0, so the in-bounds range
+                    // is naturally [-0.5, +0.5] in percent space. We therefore do NOT halve the available
+                    // range here; doing so would require +/-100% to reach the edges.
+                    float3 available = math.max(parentSize - childSize, 0);
+
+                    return available;
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -628,7 +668,8 @@ namespace Nova
                         !PositionMinMax.Equals(ref snapShot.PositionMinMax) ||
                         !Margin.Equals(ref snapShot.Margin) ||
                         !MarginMinMax.Equals(ref snapShot.MarginMinMax) ||
-                        math.any(Alignment != snapShot.Alignment))
+                        math.any(Alignment != snapShot.Alignment) ||
+                        OffsetBySize != snapShot.OffsetBySize)
                     {
                         if (!excludePosition)
                         {
@@ -639,6 +680,7 @@ namespace Nova
                         Margin = snapShot.Margin;
                         MarginMinMax = snapShot.MarginMinMax;
                         Alignment = snapShot.Alignment;
+                        OffsetBySize = snapShot.OffsetBySize;
                         dependent = HierarchyDependency.Parent;
                     }
 
@@ -648,7 +690,8 @@ namespace Nova
                         !PaddingMinMax.Equals(ref snapShot.PaddingMinMax) ||
                         AutoSize != snapShot.AutoSize ||
                         AspectRatio != snapShot.AspectRatio ||
-                        RotateSize != snapShot.RotateSize)
+                        RotateSize != snapShot.RotateSize ||
+                        !math.all(ExpandWeight == snapShot.ExpandWeight))
                     {
                         Size = snapShot.Size;
                         SizeMinMax = snapShot.SizeMinMax;
@@ -657,6 +700,7 @@ namespace Nova
                         AutoSize = snapShot.AutoSize;
                         RotateSize = snapShot.RotateSize;
                         AspectRatio = snapShot.AspectRatio;
+                        ExpandWeight = snapShot.ExpandWeight;
 
                         dependent = HierarchyDependency.ParentAndChildren;
                     }
@@ -688,6 +732,8 @@ namespace Nova
                     props.Alignment = (int3)(*(alignmentsPtr + Index));
                     props.AspectRatio = *(aspectRatiosPtr + Index);
                     props.RotateSize = *(useRotationsPtr + Index);
+                    props.OffsetBySize = *(offsetBySizePtr + Index);
+                    props.ExpandWeight = expandWeightsPtr != null ? *(expandWeightsPtr + Index) : new int2(1, 1);
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -751,6 +797,30 @@ namespace Nova
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public void WrapOffsetBySize(ref NativeList<bool> flags)
+                {
+                    offsetBySizePtr = flags.GetRawPtr();
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public void WrapOffsetBySize(bool* flags)
+                {
+                    offsetBySizePtr = flags;
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public void WrapExpandWeights(ref NativeList<int2> expandWeights)
+                {
+                    expandWeightsPtr = expandWeights.GetRawPtr();
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public void WrapExpandWeights(int2* expandWeights)
+                {
+                    expandWeightsPtr = expandWeights;
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public void WrapRotations(ref NativeList<quaternion> rotations)
                 {
                     rotationsPtr = rotations.GetRawPtr();
@@ -796,8 +866,10 @@ namespace Nova
                     autoSizesPtr = null;
                     aspectRatiosPtr = null;
                     useRotationsPtr = null;
+                    offsetBySizePtr = null;
                     relativeSizesPtr = null;
                     rotationsPtr = null;
+                    expandWeightsPtr = null;
                 }
 
                 public Properties(DataStoreIndex layoutIndex, Length3* lengths)
@@ -810,8 +882,10 @@ namespace Nova
                     autoSizesPtr = null;
                     aspectRatiosPtr = null;
                     useRotationsPtr = null;
+                    offsetBySizePtr = null;
                     relativeSizesPtr = null;
                     rotationsPtr = null;
+                    expandWeightsPtr = null;
                 }
             }
 
@@ -831,7 +905,9 @@ namespace Nova
                 public int3 Alignment;
                 public AutoSize3 AutoSize;
                 public bool RotateSize;
+                public bool OffsetBySize;
                 public AspectRatio AspectRatio;
+                public int2 ExpandWeight;
 
                 public bool3 IsRelative
                 {
