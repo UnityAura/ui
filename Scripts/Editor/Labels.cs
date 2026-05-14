@@ -245,6 +245,16 @@ namespace Nova.Editor.GUIs
             public static readonly GUIContent ClickThreshold = EditorGUIUtility.TrTextContent("Click Frame Threshold", "The number of frames that must separate a \"Press\" and \"Release\" Gesture in order to trigger a Click. For low-accuracy input devices (e.g. VR hand tracking), a higher value (such as 3) might be required to reduce noise. For high-accuracy input devices (e.g. mouse and touch), 1 should be sufficient.");
             public static readonly GUIContent EdgeSnapping = EditorGUIUtility.TrTextContent("Edge Snapping", "Enables or disables edge detection and snapping for all Nova editor tools (e.g. UIBlock Tool and Padding/Margin Tool).");
             public static readonly GUIContent HierarchyGizmos = EditorGUIUtility.TrTextContent("Hierarchy Gizmos", "Enables or disables outlining every UIBlock in the selection hierarchy. Only applicable while scene Gizmos are enabled.");
+
+            public static readonly GUIContent TmpGlobalFallbackFonts = EditorGUIUtility.TrTextContent("TMP Global Fallback Fonts", "TextMesh Pro font assets (SDF) that include characters your primary UI fonts may omit (for example currency symbols). Nova merges these into TMP Settings' global fallback list at runtime and in the editor. You can still add fallbacks on each TMP Font Asset or under Edit > Project Settings > TextMesh Pro.");
+
+            public static readonly GUIContent TmpGlobalFallbacksSection = EditorGUIUtility.TrTextContent("TextMesh Pro");
+
+            public static readonly GUIContent TmpGlobalFallbacksEmptyHelp = EditorGUIUtility.TrTextContent(
+                "No global TMP fallbacks are assigned. Missing glyphs in a primary font can render as blanks and log warnings.\n\n" +
+                "Assign one or more TMP Font Assets above (for example a wide Latin SDF from TextMesh Pro's Essential Resources). " +
+                "Nova injects them into TextMesh Pro's global fallback list so TMP can resolve characters after each font asset's own fallback table.\n\n" +
+                "You can also add fallbacks only on a specific TMP Font Asset, or under Edit > Project Settings > Text Mesh Pro > Fallback Font Assets; TMP checks primary font, then that asset's fallbacks, then the global list.");
         }
 
         public static class Tools

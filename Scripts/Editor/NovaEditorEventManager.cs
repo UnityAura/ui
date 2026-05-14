@@ -96,7 +96,7 @@ namespace Nova.Editor
 
         private static void HandleEvent(ref ChangeAssetObjectPropertiesEventArgs data)
         {
-            Object obj = EditorUtility.InstanceIDToObject(data.instanceId);
+            Object obj = ObjectFromSerializedInstanceId(data.instanceId);
 
             switch (obj)
             {
@@ -127,7 +127,7 @@ namespace Nova.Editor
 
         private static void HandleEvent(ref ChangeGameObjectOrComponentPropertiesEventArgs data)
         {
-            Object obj = EditorUtility.InstanceIDToObject(data.instanceId);
+            Object obj = ObjectFromSerializedInstanceId(data.instanceId);
 
             switch (obj)
             {
@@ -176,7 +176,7 @@ namespace Nova.Editor
 
         private static void HandleEvent(ref ChangeGameObjectParentEventArgs data)
         {
-            Object obj = EditorUtility.InstanceIDToObject(data.instanceId);
+            Object obj = ObjectFromSerializedInstanceId(data.instanceId);
 
             switch (obj)
             {
@@ -197,6 +197,16 @@ namespace Nova.Editor
                         break;
                     }
             }
+        }
+
+        /// <summary>
+        /// Resolves objects from instance ids on <see cref="ObjectChangeEvents"/> streams.
+        /// </summary>
+        private static Object ObjectFromSerializedInstanceId(int instanceId)
+        {
+#pragma warning disable CS0618 // EditorUtility.InstanceIDToObject is obsolete; change-event args still expose int instance ids without a public int-to-EntityId bridge in all supported Editor versions.
+            return EditorUtility.InstanceIDToObject(instanceId);
+#pragma warning restore CS0618
         }
     }
 }

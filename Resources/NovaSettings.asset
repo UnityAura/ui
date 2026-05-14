@@ -31,3 +31,4 @@ MonoBehaviour:
   TextFieldPrefab: {fileID: 433028253456703510, guid: 4384c656ba261894eb263de6feb0b91b, type: 3}
   ScrollViewPrefab: {fileID: 1085750826417540080, guid: ab15359d265d68c459605c98dcfe5c93, type: 3}
   UIRootPrefab: {fileID: 7599235840010813282, guid: 46640eb424e726547b5f2426e3180e95, type: 3}
+  tmpGlobalFallbackFonts: []

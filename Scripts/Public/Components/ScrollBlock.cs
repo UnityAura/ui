@@ -52,12 +52,14 @@ namespace Nova
         private Length maxElasticOverscrollBeyondBoundsY = new Length { Raw = 0.2f, Type = LengthType.Percent };
 
         [Tooltip("Unused; kept for serialized assets. Scroll Block follows Nova ScrollBehavior for bounce/clamp only — no separate recovery pass.")]
+#pragma warning disable CS0414 // Serialized legacy fields; kept for asset compatibility
         [SerializeField]
         private float overscrollStrictRecoverSpeed = 14f;
 
         [Tooltip("Unused; kept for serialized assets.")]
         [SerializeField]
         private float overscrollStrictRecoverMaxSeconds = 0.45f;
+#pragma warning restore CS0414
 
         [Tooltip("Narrows the strict scroll interval (Nova basis min/max) inward in layout-offset units. Same family as ListView/Scroller using ContentSize vs padded viewport — a small buffer absorbs float drift at the end stops.")]
         [SerializeField]

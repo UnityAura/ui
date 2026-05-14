@@ -19,6 +19,7 @@ namespace Nova.Internal.Core
             QualitySettingsUtilsImpl.Init();
 
             NovaSettingsSystem.CreateInstance();
+
             DataStoreSystem.CreateInstance();
             EngineManager.CreateInstance();
 

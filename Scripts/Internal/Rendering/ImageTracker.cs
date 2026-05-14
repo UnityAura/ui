@@ -194,7 +194,7 @@ namespace Nova.Internal.Rendering
             }
 
             if (GraphicsFormatUtility.IsCompressedFormat(texture.graphicsFormat) &&
-                !GraphicsFormatUtility.IsPVRTCFormat(texture.graphicsFormat))
+                !IsPvrtcGraphicsFormat(texture.graphicsFormat))
             {
                 formatDescriptor.BlockSize = (int)math.max(GraphicsFormatUtility.GetBlockHeight(texture.graphicsFormat), GraphicsFormatUtility.GetBlockWidth(texture.graphicsFormat));
             }
@@ -204,6 +204,15 @@ namespace Nova.Internal.Rendering
             }
 
             dataStore.SetFormatDescriptor(texture.graphicsFormat, formatDescriptor);
+        }
+
+        /// <summary>
+        /// PVRTC uses non-standard block tiling; <see cref="GraphicsFormatUtility.GetBlockWidth"/> / GetBlockHeight are not reliable here.
+        /// Avoids obsolete <c>GraphicsFormatUtility.IsPVRTCFormat</c> (PVRTC compression is deprecated).
+        /// </summary>
+        private static bool IsPvrtcGraphicsFormat(GraphicsFormat format)
+        {
+            return format.ToString().Contains("PVRTC", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

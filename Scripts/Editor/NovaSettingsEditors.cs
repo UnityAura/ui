@@ -1,4 +1,5 @@
 ﻿// Copyright (c) Supernova Technologies LLC
+using Nova.Internal;
 using Nova.Internal.Rendering;
 using UnityEditor;
 using static Nova.Editor.Serialization.Wrappers;
@@ -35,7 +36,7 @@ namespace Nova.Editor.GUIs
             NovaGUI.Layout.EndHorizontal();
         }
 
-        public static void DrawRendering(_SettingsConfig config)
+        public static void DrawRendering(_SettingsConfig config, SerializedObject novaSettingsRoot)
         {
             using Foldout foldout = NovaGUI.EditorPrefFoldoutHeader("Rendering");
 
@@ -82,10 +83,48 @@ namespace Nova.Editor.GUIs
 
             EditorGUI.EndDisabledGroup();
 
+            DrawTmpGlobalFallbackFonts(novaSettingsRoot);
+
             NovaGUI.LabelWidth = labelWidth;
             NovaGUI.Layout.EndVertical();
 
             NovaGUI.Layout.EndHorizontal();
+        }
+
+        private static void DrawTmpGlobalFallbackFonts(SerializedObject novaSettingsRoot)
+        {
+            if (novaSettingsRoot == null)
+            {
+                return;
+            }
+
+            SerializedProperty prop = novaSettingsRoot.FindProperty("tmpGlobalFallbackFonts");
+            if (prop == null)
+            {
+                return;
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField(Labels.Settings.TmpGlobalFallbacksSection, EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(prop, Labels.Settings.TmpGlobalFallbackFonts, true);
+
+            bool hasAny = false;
+            for (int i = 0; i < prop.arraySize; i++)
+            {
+                if (prop.GetArrayElementAtIndex(i).objectReferenceValue != null)
+                {
+                    hasAny = true;
+                    break;
+                }
+            }
+
+            if (!hasAny)
+            {
+                EditorGUILayout.HelpBox(Labels.Settings.TmpGlobalFallbacksEmptyHelp.text, MessageType.Warning);
+            }
+
+            EditorGUI.indentLevel--;
         }
 
         public static void DrawInput(_SettingsConfig config)

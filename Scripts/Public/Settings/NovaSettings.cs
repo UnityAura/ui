@@ -3,6 +3,7 @@ using Nova.Compat;
 using Nova.Internal;
 using System;
 using System.Runtime.CompilerServices;
+using TMPro;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
@@ -239,9 +240,17 @@ namespace Nova
         public UIBlock UIRootPrefab = null;
         #endregion
 
+        /// <summary>
+        /// Optional TextMesh Pro font assets (for example a wide Latin SDF) merged into
+        /// TextMesh Pro's global fallback list (<see cref="TMPro.TMP_Settings.fallbackFontAssets"/>) so glyphs missing from a primary UI font can still render.
+        /// Configure under Project Settings → Nova → Rendering.
+        /// </summary>
+        [SerializeField]
+        internal TMP_FontAsset[] tmpGlobalFallbackFonts = null;
+
         internal void MarkDirty(bool fireEvent, bool markDirty = true)
         {
-            Internal.NovaSettings.Config = UnsafeUtility.As<SettingsConfig, Internal.SettingsConfig>(ref _instance.settings);
+            Internal.NovaSettings.Config = UnsafeUtility.As<SettingsConfig, Internal.SettingsConfig>(ref settings);
 
             if (fireEvent)
             {
@@ -252,10 +261,33 @@ namespace Nova
             {
                 NovaApplication.MarkDirty(this);
             }
+
+            TmpGlobalFallbackSynchronizer.Sync(tmpGlobalFallbackFonts);
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            TmpGlobalFallbackSynchronizer.Sync(tmpGlobalFallbackFonts);
+        }
+#endif
 
         #region Singleton
         internal static bool Initialized => _instance == null ? TryInitialize() : true;
+
+        /// <summary>
+        /// Merges <see cref="tmpGlobalFallbackFonts"/> into TextMesh Pro's global fallback list.
+        /// Exposed for engine bootstrap in assemblies that cannot access <see cref="Instance"/>.
+        /// </summary>
+        public static void ApplyTmpGlobalFontFallbacks()
+        {
+            if (!Initialized)
+            {
+                return;
+            }
+
+            TmpGlobalFallbackSynchronizer.Sync(_instance.tmpGlobalFallbackFonts);
+        }
 
         private static NovaSettings _instance = null;
         internal static NovaSettings Instance

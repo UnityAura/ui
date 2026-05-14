@@ -31,7 +31,7 @@ namespace Nova.Editor
             }
 
             EditorGUI.BeginChangeCheck();
-            NovaSettingsEditors.DrawRendering(config);
+            NovaSettingsEditors.DrawRendering(config, serializedObject);
             if (EditorGUI.EndChangeCheck())
             {
                 MarkDirty(true);
